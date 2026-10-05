@@ -17,13 +17,18 @@ class MainActivity : AppCompatActivity() {
         val viewPager = findViewById<ViewPager2>(R.id.viewPager)
         val tabLayout = findViewById<TabLayout>(R.id.tabLayout)
 
+        val titles = listOf("Регистрация", "Правила")
+
         viewPager.adapter = object : FragmentStateAdapter(this) {
-            override fun getItemCount() = 1
-            override fun createFragment(position: Int): Fragment = RegistrationFragment()
+            override fun getItemCount() = titles.size
+            override fun createFragment(position: Int): Fragment = when (position) {
+                0 -> RegistrationFragment()
+                else -> RulesFragment()
+            }
         }
 
-        TabLayoutMediator(tabLayout, viewPager) { tab, _ ->
-            tab.text = "Регистрация"
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = titles[position]
         }.attach()
     }
 }
