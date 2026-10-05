@@ -17,13 +17,14 @@ class MainActivity : AppCompatActivity() {
         val viewPager = findViewById<ViewPager2>(R.id.viewPager)
         val tabLayout = findViewById<TabLayout>(R.id.tabLayout)
 
-        val titles = listOf("Регистрация", "Правила")
+        val titles = listOf("Регистрация", "Правила", "Авторы")
 
         viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = titles.size
             override fun createFragment(position: Int): Fragment = when (position) {
                 0 -> RegistrationFragment()
-                else -> RulesFragment()
+                1 -> RulesFragment()
+                else -> AuthorsFragment()
             }
         }
 
