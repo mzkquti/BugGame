@@ -4,7 +4,12 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.yourname.buggame.data.AppDatabase
+import com.yourname.buggame.data.GameResult
+import kotlinx.coroutines.launch
 
 class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener {
 
@@ -41,6 +46,14 @@ class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener {
 
     private fun startGame() {
         val settings = GameSettings(requireContext())
+        if (settings.currentPlayerId <= 0L) {
+            Toast.makeText(
+                requireContext(),
+                "Сначала зарегистрируйте или выберите игрока (вкладка «Регистрация»)",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
         resultCard.visibility = View.GONE
         btnStart.isEnabled = false
         gameView.start(settings.speed, settings.maxBugs, settings.roundSeconds)
@@ -65,6 +78,27 @@ class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener {
 
         resultCard.visibility = View.VISIBLE
         btnStart.isEnabled = true
+
+        saveResult(score, hits, misses)
+    }
+
+    // Сохраняем результат раунда в базу данных
+    private fun saveResult(score: Int, hits: Int, misses: Int) {
+        val playerId = GameSettings(requireContext()).currentPlayerId
+        if (playerId <= 0L) return
+        val db = AppDatabase.get(requireContext())
+        viewLifecycleOwner.lifecycleScope.launch {
+            db.resultDao().insert(
+                GameResult(
+                    playerId = playerId,
+                    score = score,
+                    hits = hits,
+                    misses = misses,
+                    playedAt = System.currentTimeMillis()
+                )
+            )
+            Toast.makeText(requireContext(), "Результат сохранён", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // Ушли с вкладки — раунд прерывается

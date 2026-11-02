@@ -13,7 +13,12 @@ import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.yourname.buggame.data.AppDatabase
+import com.yourname.buggame.data.Player
+import kotlinx.coroutines.launch
 import java.util.Calendar
 
 class RegistrationFragment : Fragment(R.layout.fragment_registration) {
@@ -22,8 +27,19 @@ class RegistrationFragment : Fragment(R.layout.fragment_registration) {
     private var selectedMonth = 0
     private var selectedDay = 0
 
+    private lateinit var settings: GameSettings
+    private lateinit var db: AppDatabase
+    private lateinit var tvCurrentPlayer: TextView
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        settings = GameSettings(requireContext())
+        db = AppDatabase.get(requireContext())
+        tvCurrentPlayer = view.findViewById(R.id.tvCurrentPlayer)
+        val btnChoosePlayer = view.findViewById<Button>(R.id.btnChoosePlayer)
+
+        btnChoosePlayer.setOnClickListener { choosePlayer() }
 
         val etFullName = view.findViewById<EditText>(R.id.etFullName)
         val rgGender = view.findViewById<RadioGroup>(R.id.rgGender)
@@ -81,6 +97,61 @@ class RegistrationFragment : Fragment(R.layout.fragment_registration) {
                     "Знак зодиака: ${player.zodiacSign}"
 
             imgZodiac.setImageResource(getZodiacImageRes(zodiac))
+
+            // сохраняем игрока в базу и делаем его текущим
+            viewLifecycleOwner.lifecycleScope.launch {
+                val id = db.playerDao().insert(
+                    Player(
+                        fullName = player.fullName,
+                        gender = player.gender,
+                        course = player.course,
+                        difficulty = player.difficulty,
+                        birthYear = player.birthYear,
+                        birthMonth = player.birthMonth,
+                        birthDay = player.birthDay,
+                        zodiacSign = player.zodiacSign
+                    )
+                )
+                settings.currentPlayerId = id
+                refreshCurrentPlayer()
+                Toast.makeText(requireContext(), "Игрок сохранён", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshCurrentPlayer()
+    }
+
+    private fun refreshCurrentPlayer() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val id = settings.currentPlayerId
+            val player = if (id > 0) db.playerDao().getById(id) else null
+            tvCurrentPlayer.text = if (player != null) {
+                "Текущий игрок: ${player.fullName}"
+            } else {
+                "Текущий игрок не выбран"
+            }
+        }
+    }
+
+    private fun choosePlayer() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val players = db.playerDao().getAll()
+            if (players.isEmpty()) {
+                Toast.makeText(requireContext(), "Пока нет зарегистрированных игроков", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val names = players.map { "${it.fullName} (курс ${it.course})" }.toTypedArray()
+            AlertDialog.Builder(requireContext())
+                .setTitle("Выберите игрока")
+                .setItems(names) { _, which ->
+                    settings.currentPlayerId = players[which].id
+                    refreshCurrentPlayer()
+                }
+                .setNegativeButton("Отмена", null)
+                .show()
         }
     }
 

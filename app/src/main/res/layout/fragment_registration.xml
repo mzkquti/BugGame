@@ -9,6 +9,21 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <TextView
+            android:id="@+id/tvCurrentPlayer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Текущий игрок не выбран"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnChoosePlayer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Выбрать из зарегистрированных" />
+
         <EditText
             android:id="@+id/etFullName"
             android:layout_width="match_parent"

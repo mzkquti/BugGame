@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
         val viewPager = findViewById<ViewPager2>(R.id.viewPager)
         val tabLayout = findViewById<TabLayout>(R.id.tabLayout)
 
-        val titles = listOf("Регистрация", "Игра", "Правила", "Авторы", "Настройки")
+        val titles = listOf("Регистрация", "Игра", "Правила", "Авторы", "Настройки", "Рекорды")
 
         viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun getItemCount() = titles.size
@@ -28,7 +28,8 @@ class MainActivity : AppCompatActivity() {
                 1 -> GameFragment()
                 2 -> RulesFragment()
                 3 -> AuthorsFragment()
-                else -> SettingsFragment()
+                4 -> SettingsFragment()
+                else -> RecordsFragment()
             }
         }
 
@@ -40,10 +41,12 @@ class MainActivity : AppCompatActivity() {
         toolbar.inflateMenu(R.menu.menu_main)
         toolbar.setOnMenuItemClickListener { item ->
             val page = when (item.itemId) {
+                R.id.menu_register -> 0
                 R.id.menu_game -> 1
                 R.id.menu_rules -> 2
                 R.id.menu_authors -> 3
                 R.id.menu_settings -> 4
+                R.id.menu_records -> 5
                 else -> return@setOnMenuItemClickListener false
             }
             viewPager.currentItem = page
