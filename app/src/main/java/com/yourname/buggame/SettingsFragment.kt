@@ -5,12 +5,14 @@ import android.view.View
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import org.koin.android.ext.android.inject
 
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
+    private val settings: GameSettings by inject()
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val settings = GameSettings(requireContext())
 
         setupSeekBar(view, R.id.sbSpeed, R.id.tvSpeed, "Скорость игры",
             1, 10, settings.speed, "") { settings.speed = it }

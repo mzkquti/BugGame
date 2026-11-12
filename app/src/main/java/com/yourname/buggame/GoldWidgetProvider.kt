@@ -10,11 +10,16 @@ import android.widget.RemoteViews
 import com.yourname.buggame.gold.GoldRate
 import com.yourname.buggame.gold.GoldRepository
 import java.util.Locale
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import kotlin.concurrent.thread
 
 // Виджет в форме золотого шара: показывает курс золота ЦБ (₽ за грамм).
 // Обновляется системой раз в полчаса и по нажатию на шар.
-class GoldWidgetProvider : AppWidgetProvider() {
+class GoldWidgetProvider : AppWidgetProvider(), KoinComponent {
+
+    // репозиторий выдаёт Koin (запущен в BugGameApp до любых receiver-ов)
+    private val repo: GoldRepository by inject()
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
         refresh(context, manager, appWidgetIds)
@@ -30,7 +35,6 @@ class GoldWidgetProvider : AppWidgetProvider() {
     }
 
     private fun refresh(context: Context, manager: AppWidgetManager, ids: IntArray) {
-        val repo = GoldRepository(context)
         // сразу показываем сохранённый курс, потом подгружаем свежий
         draw(context, manager, ids, repo.cached(), loading = true)
 

@@ -13,11 +13,14 @@ import androidx.lifecycle.lifecycleScope
 import com.yourname.buggame.data.AppDatabase
 import com.yourname.buggame.data.RecordRow
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class RecordsFragment : Fragment(R.layout.fragment_records) {
+
+    private val db: AppDatabase by inject()
 
     private lateinit var listView: ListView
     private lateinit var tvEmpty: TextView
@@ -32,7 +35,7 @@ class RecordsFragment : Fragment(R.layout.fragment_records) {
     override fun onResume() {
         super.onResume()
         viewLifecycleOwner.lifecycleScope.launch {
-            val rows = AppDatabase.get(requireContext()).resultDao().getTopRecords()
+            val rows = db.resultDao().getTopRecords()
             listView.adapter = RecordsAdapter(requireContext(), rows)
             tvEmpty.visibility = if (rows.isEmpty()) View.VISIBLE else View.GONE
         }

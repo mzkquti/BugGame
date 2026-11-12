@@ -58,6 +58,7 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("io.insert-koin:koin-android:4.1.1")
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
 }

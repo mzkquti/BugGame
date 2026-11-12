@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import com.yourname.buggame.data.AppDatabase
 import com.yourname.buggame.data.Player
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 import java.util.Calendar
 
 class RegistrationFragment : Fragment(R.layout.fragment_registration) {
@@ -27,15 +28,13 @@ class RegistrationFragment : Fragment(R.layout.fragment_registration) {
     private var selectedMonth = 0
     private var selectedDay = 0
 
-    private lateinit var settings: GameSettings
-    private lateinit var db: AppDatabase
+    private val settings: GameSettings by inject()
+    private val db: AppDatabase by inject()
     private lateinit var tvCurrentPlayer: TextView
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        settings = GameSettings(requireContext())
-        db = AppDatabase.get(requireContext())
         tvCurrentPlayer = view.findViewById(R.id.tvCurrentPlayer)
         val btnChoosePlayer = view.findViewById<Button>(R.id.btnChoosePlayer)
 
