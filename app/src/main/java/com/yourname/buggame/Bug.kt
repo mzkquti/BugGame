@@ -15,5 +15,6 @@ class Bug(
     var y: Float,
     var vx: Float,
     var vy: Float,
-    val sizePx: Float
+    val sizePx: Float,
+    val golden: Boolean = false   // золотой таракан: очки зависят от курса золота
 )

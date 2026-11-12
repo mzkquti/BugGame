@@ -28,6 +28,9 @@ class GameView @JvmOverloads constructor(
 
         // Сколько секунд ещё действует режим наклона (0 — режим выключен)
         fun onTiltChanged(secondsLeft: Int) {}
+
+        // Игрок поймал золотого таракана и получил столько очков
+        fun onGoldCaught(points: Int) {}
     }
 
     // Бонус на экране: пока не нажат, исчезает по таймеру
@@ -52,6 +55,12 @@ class GameView @JvmOverloads constructor(
         style = Paint.Style.FILL
     }
 
+    private val goldPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#FFC107")
+        alpha = 200
+        style = Paint.Style.FILL
+    }
+
     private var running = false
     private var score = 0
     private var hits = 0
@@ -73,6 +82,12 @@ class GameView @JvmOverloads constructor(
     private var tiltLeftMs = 0L
     private var lastTiltSecondShown = 0
 
+    // --- золотой таракан ---
+    private var goldPoints = 50
+    private var nextGoldMs = 0L
+    private var goldenBug: Bug? = null
+    private var goldenLeftMs = 0L
+
     // ускорение «вниз по экрану» от наклона телефона (м/с², с учётом поворота экрана)
     private var tiltX = 0f
     private var tiltY = 0f
@@ -90,13 +105,21 @@ class GameView @JvmOverloads constructor(
         }
     }
 
-    fun start(speedLevel: Int, maxBugs: Int, roundSeconds: Int, bonusIntervalSec: Int) {
+    fun start(
+        speedLevel: Int,
+        maxBugs: Int,
+        roundSeconds: Int,
+        bonusIntervalSec: Int,
+        goldPoints: Int
+    ) {
         this.speedLevel = speedLevel
         this.maxBugs = maxBugs
         bugs.clear()
         resetBonusState()
         bonusIntervalMs = bonusIntervalSec * 1000L
         nextBonusMs = bonusIntervalMs
+        this.goldPoints = goldPoints
+        nextGoldMs = GOLD_INTERVAL_MS
         score = 0
         hits = 0
         misses = 0
@@ -124,6 +147,7 @@ class GameView @JvmOverloads constructor(
     }
 
     private fun resetBonusState() {
+        goldenBug = null
         bonus = null
         tiltLeftMs = 0L
         lastTiltSecondShown = 0
@@ -153,6 +177,7 @@ class GameView @JvmOverloads constructor(
         }
 
         updateBonus(dtMs)
+        updateGolden(dtMs)
 
         if (bugs.size < maxBugs && Random.nextFloat() < 0.04f) spawnBug()
 
@@ -215,6 +240,36 @@ class GameView @JvmOverloads constructor(
         }
     }
 
+    // Каждые 20 секунд появляется золотой таракан и живёт ограниченное время
+    private fun updateGolden(dtMs: Long) {
+        nextGoldMs -= dtMs
+        if (nextGoldMs <= 0) {
+            nextGoldMs = GOLD_INTERVAL_MS
+            if (goldenBug == null) spawnGolden()
+        }
+        goldenBug?.let {
+            goldenLeftMs -= dtMs
+            if (goldenLeftMs <= 0) {
+                bugs.remove(it)
+                goldenBug = null
+            }
+        }
+    }
+
+    private fun spawnGolden() {
+        if (width == 0 || height == 0) return
+        val type = BugType("🪳", 52f, 1.8f, goldPoints)
+        val size = type.sizeDp * density
+        val speed = BASE_SPEED_DP * density * speedLevel * type.speedMultiplier
+        val angle = Random.nextFloat() * 2f * Math.PI.toFloat()
+        val x = size / 2 + Random.nextFloat() * (width - size)
+        val y = size / 2 + Random.nextFloat() * (height - size)
+        val bug = Bug(type, x, y, cos(angle) * speed, sin(angle) * speed, size, golden = true)
+        bugs.add(bug)
+        goldenBug = bug
+        goldenLeftMs = GOLD_LIFE_MS
+    }
+
     private fun spawnBonus() {
         if (width == 0 || height == 0) return
         val size = BONUS_SIZE_DP * density
@@ -273,6 +328,7 @@ class GameView @JvmOverloads constructor(
         }
 
         for (bug in bugs) {
+            if (bug.golden) canvas.drawCircle(bug.x, bug.y, bug.sizePx * 0.65f, goldPaint)
             paint.textSize = bug.sizePx
             val baseline = bug.y - (paint.ascent() + paint.descent()) / 2f
             canvas.drawText(bug.type.emoji, bug.x, baseline, paint)
@@ -301,6 +357,10 @@ class GameView @JvmOverloads constructor(
                 bugs.remove(hit)
                 score += hit.type.points
                 hits++
+                if (hit.golden) {
+                    goldenBug = null
+                    listener?.onGoldCaught(hit.type.points)
+                }
             } else {
                 score -= penalty
                 misses++
@@ -315,5 +375,7 @@ class GameView @JvmOverloads constructor(
         const val BASE_SPEED_DP = 30f      // базовая скорость жука на единицу уровня скорости
         const val TILT_ACCEL_DP = 25f      // насколько сильно наклон разгоняет жуков
         const val BONUS_SIZE_DP = 48f
+        const val GOLD_INTERVAL_MS = 20_000L   // золотой таракан появляется каждые 20 секунд
+        const val GOLD_LIFE_MS = 8_000L        // и убегает, если его не поймали
     }
 }

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Корень прозрачный и занимает всю ячейку; шар — квадрат фиксированного размера по центру,
+     поэтому всегда остаётся кругом, а не растягивается в эллипс -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="104dp"
+        android:layout_height="104dp"
+        android:layout_gravity="center"
+        android:background="@drawable/widget_ball"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Золото ЦБ"
+            android:textColor="#5D4037"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/tvWidgetPrice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="…"
+            android:textColor="#3E2723"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="₽ за грамм"
+            android:textColor="#5D4037"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/tvWidgetDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#5D4037"
+            android:textSize="9sp" />
+    </LinearLayout>
+</FrameLayout>

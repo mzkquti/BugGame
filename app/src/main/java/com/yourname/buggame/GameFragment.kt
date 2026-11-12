@@ -17,7 +17,12 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.yourname.buggame.data.AppDatabase
 import com.yourname.buggame.data.GameResult
+import com.yourname.buggame.gold.GoldRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.Locale
+import kotlin.math.roundToInt
 
 class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener, SensorEventListener {
 
@@ -33,6 +38,7 @@ class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener, Sensor
     private lateinit var tvResultAccuracy: TextView
     private lateinit var btnReplay: Button
     private lateinit var tvBonus: TextView
+    private lateinit var goldRepo: GoldRepository
 
     // акселерометр: наклон телефона влияет на движение жуков, когда нажат бонус
     private var sensorManager: SensorManager? = null
@@ -57,6 +63,7 @@ class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener, Sensor
         tvResultAccuracy = view.findViewById(R.id.tvResultAccuracy)
         btnReplay = view.findViewById(R.id.btnReplay)
         tvBonus = view.findViewById(R.id.tvBonus)
+        goldRepo = GoldRepository(requireContext())
 
         sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -91,8 +98,12 @@ class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener, Sensor
         }
         resultCard.visibility = View.GONE
         btnStart.isEnabled = false
+        // очки за золотого таракана пропорциональны курсу золота (1 очко за каждые 100 ₽/г)
+        val rate = goldRepo.cached()?.pricePerGram ?: DEFAULT_GOLD_RATE
+        val goldPoints = (rate / 100).roundToInt().coerceAtLeast(10)
         gameView.start(
-            settings.speed, settings.maxBugs, settings.roundSeconds, settings.bonusIntervalSec
+            settings.speed, settings.maxBugs, settings.roundSeconds,
+            settings.bonusIntervalSec, goldPoints
         )
     }
 
@@ -143,6 +154,18 @@ class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener, Sensor
         Toast.makeText(requireContext(), "Бонус! Наклоняйте телефон", Toast.LENGTH_SHORT).show()
     }
 
+    override fun onGoldCaught(points: Int) {
+        val rate = goldRepo.cached()?.pricePerGram
+        val rateText = if (rate != null) {
+            " (курс золота: ${String.format(Locale("ru", "RU"), "%,.0f", rate)} ₽/г)"
+        } else {
+            ""
+        }
+        Toast.makeText(
+            requireContext(), "Золотой таракан! +$points очков$rateText", Toast.LENGTH_SHORT
+        ).show()
+    }
+
     override fun onTiltChanged(secondsLeft: Int) {
         if (secondsLeft > 0) {
             tvBonus.text = "🎁 Наклоняйте телефон! Осталось: $secondsLeft с"
@@ -155,6 +178,10 @@ class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener, Sensor
     // Вкладка стала активной — начинаем слушать акселерометр
     override fun onResume() {
         super.onResume()
+        // обновляем курс золота в фоне: он понадобится в следующем раунде
+        viewLifecycleOwner.lifecycleScope.launch {
+            withContext(Dispatchers.IO) { goldRepo.refreshBlocking() }
+        }
         accelerometer?.let {
             sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         }
@@ -192,4 +219,8 @@ class GameFragment : Fragment(R.layout.fragment_game), GameView.Listener, Sensor
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    private companion object {
+        const val DEFAULT_GOLD_RATE = 5000.0   // курс по умолчанию, если загрузить не удалось
+    }
 }
